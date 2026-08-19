@@ -4,6 +4,24 @@ Fourteen deliverables. Scale to the product — small tools merge documents; the
 precedence chain stay. Every document is prose-first with reasons attached; bullets only where a
 list is genuinely a list.
 
+Each row's "must contain" cell is a summary. The **acceptance contract** — the exhaustive required
+contents, with field schemas and worked examples — lives in the deliverable-spec files. Load the
+matching one before producing the document; a summary produces a plausible, thin document, which is
+the failure this whole reference layer exists to prevent.
+
+| Document | Acceptance contract |
+|---|---|
+| PRD | `deliverables-requirements.md` |
+| DESIGN_SPEC, EXTENSIBILITY | `deliverables-architecture.md` |
+| DESIGN_SYSTEM, DESIGN_TOKENS, SCREENS, MOTION, WIREFRAMES, PROTOTYPE | `deliverables-design.md` |
+| SECURITY | `deliverables-security.md` |
+| TESTS_TDD | `deliverables-testing.md` |
+| LOOP_GOALS, STATE_AND_DATA | `deliverables-build-goals.md` |
+| CLAUDE.md | `claude-md-template.md` |
+
+Before any of it: `elicitation.md` establishes what the user actually has and pins the scope and
+design direction. Most users arrive with a sentence and no artifacts; that is the normal case.
+
 | Document | Role | Must contain |
 |---|---|---|
 | `CLAUDE.md` (repo root) | Entry point + operating contract for the build | Document map, precedence chain, never-stop protocol, prerequisites, phase table, merged non-negotiables, definition of done, maintained build-state section |
@@ -35,5 +53,11 @@ documents without a declared winner rot into contradictions within three edit pa
 - Decisions: `D<n>` in the PRD; design decisions recorded where made (e.g., D-UI-n).
 - Architecture decisions: `AD-<n>` table in DESIGN_SPEC.
 - Goals: `G-<phase>.<n>`, matching the build plan's deliverable numbering.
+- Test suites: `TS-<GROUP>-<n>` — the group matches the FR group it proves wherever one exists.
+- Phase-0 defects: `DR-<n>` (defect register), cited by the regression test named for it.
+
+Every ID family in this list is recognised by `scripts/id-sweep.sh`. Adding a family here without
+adding it to that script's grammar makes the new IDs invisible to the pre-flight gate — which is
+exactly how a cross-reference check passes while references dangle.
 - Every threshold/constant in the spec is tenant/user configuration with a recorded default —
   hardcoded values are a named anti-pattern.

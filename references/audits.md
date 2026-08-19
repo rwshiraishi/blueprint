@@ -70,9 +70,10 @@ proof. Every rule names its enforcement mechanism or it is not a rule.
 ## Pre-flight readiness audit (the last gate before "GO")
 
 Question: can an autonomous session execute this package without stalling or producing a mediocre
-product? Start with the **mechanical ID sweep** — a script (not eyeballing) that greps every
-FR/NFR/AD/D/G/suite ID referenced in any doc and fails on IDs never defined; append its output to
-AUDIT_LOG.md. Then check: (1) broken references — every goal/section/file/command cited actually exists as
+product? Start with the **mechanical ID sweep** — `scripts/id-sweep.sh docs` ships with this skill; it
+greps every FR/NFR/AD/D/G ID referenced in any doc and exits nonzero on IDs never defined. Append
+its output to AUDIT_LOG.md. Eyeballing has never once caught a dangling reference in a
+fourteen-document set, which is why this one is a script. Then check: (1) broken references — every goal/section/file/command cited actually exists as
 described; the dependency graph has no cycles, orphans, or contradictions at its root; (2) the
 first-hour trap — toolchain versions pinned, scaffold commands runnable, everything the docs
 assume exists but never define; (3) contradictions from successive edit passes — renamed IDs,
