@@ -28,8 +28,14 @@ the build executes it and amends only the Build State section.
      criteria adversarially; the orchestrator alone merges, gates, commits, pushes.
    - *Scope discipline*: discovered work → BACKLOG.md, not a detour. New dependencies pass the
      supply-chain rule first.
-   - *Session hygiene*: on refresh read this file + STATUS/BLOCKERS + current goal only. Git
-     history is memory: goal IDs in every commit subject.
+   - *Session hygiene and cold resume*: context gets cleared, deliberately or otherwise. Write the
+     recovery sequence into this file verbatim — an agent that has just lost its context cannot
+     infer it. Read in order and stop: this file's Build State; `LOOP_GOALS.md` §Progress only, to
+     find the `[~]` goal or the unblocked set; `BLOCKERS.md`; the current goal's entry with its
+     step ledger and reading map; then only the sections that map names. Then **verify before
+     continuing** — re-run the criteria already marked green, because a marker records what the
+     last session believed and the command reports what is true. A green marker that fails is
+     wrong: reset it and redo the step. Git history is memory; goal IDs in every commit subject.
 
 3. **README.md as a living map** — updated before every commit: architecture diagrams (Mermaid)
    for back end and front end, directory tree with purposes, sequence diagrams for core workflows,
@@ -50,8 +56,10 @@ the build executes it and amends only the Build State section.
    gate green, security suites green, a11y clean, screens match the visual spec, eval bars met or
    credential-blocked-with-evidence, deployed or BLOCKERS.md says exactly why not).
 
-8. **Build state** *(the only section the build maintains — ten lines: current goal, remote, last
-   pushed commit, open blockers, README-verified date)*.
+8. **Build state** *(the only section of THIS file the build maintains — ten lines: current goal,
+   remote, last pushed commit, open blockers, README-verified date)*. The durable per-goal record
+   lives in `LOOP_GOALS.md` §Progress and each goal's step ledger, committed alongside the work it
+   describes; `STATUS.md` is a regenerated report and loses to the ledger on any disagreement.
 
 ## The commit protocol (write it exactly)
 

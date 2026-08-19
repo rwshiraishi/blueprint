@@ -81,6 +81,33 @@ file handed to an iOS build is inert and a breakpoint scale means nothing on nat
 | **Adaptive axis** | Breakpoints + container queries | Size classes + Dynamic Type | Window size classes + density | Both, resolved by adapters | Window size, multi-window | Breakpoints + density mode |
 | **Min target** | 24×24 px (WCAG 2.2) | 44×44 pt (HIG) | 48×48 dp (Material) | larger of the two | 24×24 px | 24×24, 32 for primary |
 
+## Resumable by design
+
+Long builds outlive a context window. The plan is written so a session can end mid-goal — on a
+budget cap, a blocker, or a deliberate context clear — and a fresh agent can pick it up cold.
+
+`LOOP_GOALS.md` opens with a progress ledger the build ticks in place, and every goal carries a
+nine-step checklist so "half done" is a readable state rather than a guess:
+
+```
+- [x] G-1.2  Database schema and migration runner
+- [~] G-4.2  Live provider send path            (3/4 EC green · blocked on B-3 for EC-3)
+- [!] G-7.1  App Store Connect upload pipeline   (B-5: ASC API key)
+- [ ] G-4.3  Bounce and complaint webhook intake
+
+G-4.3  Steps
+  [x] 2. Write the failing tests   [x] 3. Confirm each fails on its intended assertion
+  [x] 4. Commit the failing tests  [~] 5. Implement until green
+  [ ] 6. Invariant gate            [ ] 7. Exit criteria, green twice
+```
+
+Status markers are the **only** thing the build may edit in that file — a build that can edit its
+own acceptance criteria has no acceptance criteria. The cold-resume sequence is written into the
+entry-point file verbatim, because an agent that has just lost its context cannot infer a recovery
+procedure from principles. It reads five things in order, then **re-runs the criteria already
+marked green before trusting them**: a marker records what the last session believed, and the
+command reports what is true.
+
 ## The pipeline
 
 | # | Phase | The point |

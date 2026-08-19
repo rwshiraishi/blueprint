@@ -54,6 +54,8 @@ one, and neither can a build agent.
 | **Estimated size** | yes | One of `S` / `M` / `L` with the definitions in §1.3, plus a rough changed-file count. | Size drives parallelism decisions and blocker thresholds. An `L` goal that has produced no green criterion after three loops is a decomposition failure, not a stuck build; the size field is what makes that judgment mechanical. |
 | **Anti-goals** | yes | The `AG-<n>` IDs that bind here, plus any goal-specific forbidden path, each with its enforcing grep or check. | Global anti-goals apply to every goal; this field records the ones with teeth here and any local addition (e.g. "must not modify the auth kernel"). |
 | **Blocked-by-credential** | yes | Which criteria cannot run without a human-supplied credential, and what the fixture substitute is. Or `none`. | Per the cloud-independence rule in `claude-md-template.md`: a credential gap blocks a verification step, never a phase. Recording it up front prevents an agent from stalling on a goal it could have completed against fixtures. |
+| **Status** | yes | One of `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked (with the `B-<n>` id), `[-]` dropped (with a reason). Maintained by the build, in `LOOP_GOALS.md` itself. | This is the only field the build is allowed to edit, and it is what makes the spec resumable after a context clear. Progress recorded only in a separate file means the spec and reality drift the moment someone reads one without the other. |
+| **Step ledger** | yes | The nine-step checklist in §9.3, ticked in place as the goal proceeds. | A goal is not atomic. Without per-step state, an agent resuming a half-finished goal cannot tell whether the failing test was already written and committed, and will either redo it or skip it — both are wrong. |
 | **Rollback** | no | How to revert if the goal lands and later proves wrong: migration down-path, feature flag, or "revert the commit, no state". | Only required for goals with irreversible side effects — schema migrations, data backfills, anything touching money or external systems. |
 
 ### 1.2 What goes in the reading map, concretely
@@ -1190,6 +1192,86 @@ When the unblocked set empties, STATUS.md is the session's final artifact and ev
 must be actionable on its own terms. That is the moment the five-minute bar is actually tested.
 
 ---
+
+### 9.3 The progress ledger in `LOOP_GOALS.md`
+
+`LOOP_GOALS.md` is a guardrail file. The build reads it and amends **only status markers** — never
+a title, an exit criterion, a dependency, or a reading map. A build that edits its own acceptance
+criteria has no acceptance criteria.
+
+The file opens with a generated index, so the first screen answers "where is this build" without
+reading further:
+
+```
+## Progress
+
+- [x] G-1.1  Repo scaffold, toolchain pins, CI skeleton
+- [x] G-1.2  Database schema and migration runner
+- [~] G-4.2  Live provider send path            (3/4 EC green · blocked on B-3 for EC-3)
+- [!] G-7.1  App Store Connect upload pipeline   (B-5: ASC API key)
+- [ ] G-4.3  Bounce and complaint webhook intake
+- [-] G-6.4  Realtime presence indicators        (dropped: D9 chose polling)
+
+18 done · 1 in progress · 2 blocked · 10 pending · 1 dropped
+```
+
+Each goal entry then repeats its own marker in its heading, so a reader who jumps straight to a
+goal sees its state without scrolling back. The counts line is regenerated, never hand-edited —
+a hand-maintained count is wrong within three goals and is then actively misleading.
+
+**Why here and not only in `STATUS.md`.** They answer different questions and both are needed.
+`STATUS.md` is volatile: overwritten each loop, tuned for "what happens next", and correct only
+for the session that wrote it. The ledger is durable: it lives beside the criteria it tracks, it
+survives in git history alongside the commit that advanced it, and a diff of it is a readable
+record of what the build actually did. If they ever disagree, the ledger wins and `STATUS.md` is
+regenerated — the ledger is committed with the work, `STATUS.md` is a report about it.
+
+### 9.4 The step ledger, and resuming after a context clear
+
+A goal is not atomic. It is nine steps, and a session can end on any of them — deliberately, on a
+budget cap, or because a human cleared the context. Each goal carries the checklist and ticks it in
+place:
+
+```
+G-4.3  Bounce and complaint webhook intake                                 [~]
+  Steps
+    [x] 1. Read the reading map sections (and only those)
+    [x] 2. Write the failing tests named in Test suites
+    [x] 3. Run them; confirm each fails on its intended assertion
+    [x] 4. Commit the failing tests
+    [~] 5. Implement until green — fix the code, never the test
+    [ ] 6. Run the invariant gate
+    [ ] 7. Run every exit criterion verbatim, green twice
+    [ ] 8. Update README and the living docs
+    [ ] 9. Commit with the goal ID, push
+```
+
+Step 3 is the one that gets skipped and it is the whole point of steps 2 through 4: a test that
+fails because of an import error is not a red test, it is a broken test, and implementing against
+it proves nothing. Step 4 exists so a resuming agent can tell steps 2-3 really happened — the
+commit is the evidence, not the checkbox.
+
+**The cold-resume protocol.** After a context clear, a fresh agent with no memory of the session
+reads exactly this, in this order, and nothing else:
+
+1. `CLAUDE.md` — the operating contract and the Build State section.
+2. `LOOP_GOALS.md` **§Progress only** — to find the `[~]` goal, or the unblocked set if there is none.
+3. `BLOCKERS.md` — to avoid re-attempting something already known blocked.
+4. The current goal's entry, including its step ledger and its reading map.
+5. The sections the reading map names — and only those.
+
+Then it verifies rather than trusts: run the current goal's already-green exit criteria before
+continuing, because a marker says what the last session believed and the commands say what is
+true. If a criterion marked green fails, the marker is wrong; reset it to `[ ]` and re-do that
+step. Markers are a cache, and a cache is checked before it is used.
+
+This sequence is deliberately short. The reason for the reading map, the phase-to-reference map,
+and the one-screen `STATUS.md` is the same reason: **a resumable build is one whose entire
+resumption state fits in a small, ordered read.** A package that requires reading fourteen
+documents to know where it stands is not resumable, whatever its state files claim.
+
+Write this sequence into `CLAUDE.md` verbatim. An agent that has just lost its context cannot be
+expected to infer the recovery procedure from principles.
 
 ## 10. Definition of done — Phase 7
 

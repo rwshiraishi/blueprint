@@ -37,7 +37,7 @@ design direction. Most users arrive with a sentence and no artifacts; that is th
 | `docs/SECURITY.md` | Threat model + enforced rules | Actor×surface threats, rules each naming machine enforcement, isolation defense-in-depth, security test suites mapped to CI jobs |
 | `docs/EXTENSIBILITY.md` | Modularity contract | Fixed kernel, enumerated extension surfaces, tenant config governance, worked module examples, what is NOT extensible + escalation path |
 | `docs/TESTS_TDD.md` | Acceptance oracle | Test-first protocol, real-infra substrate, per-subsystem suites with skeletons, regression tests named for Phase-0 defects, eval gates, FR↔test traceability |
-| `docs/LOOP_GOALS.md` | Build backbone | Toolchain pins + data sources, invariant gate definition, goals with Depends + literal exit commands, inheritance rule for plan items without full entries, TDD reading map, anti-goals with greps, budget notes |
+| `docs/LOOP_GOALS.md` | Build backbone + resumable progress ledger | Toolchain pins + data sources, invariant gate definition, progress ledger with status markers the build ticks in place, goals with Depends + literal exit commands + a nine-step ledger each, inheritance rule for plan items without full entries, TDD reading map, anti-goals with greps, budget notes |
 
 ## Precedence chain
 

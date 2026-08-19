@@ -158,7 +158,15 @@ gates for any ML/LLM component, and the rule that weakening a test requires a hu
 
 Convert the build plan into **goals with machine-checkable exit criteria** — literal commands with
 expected outcomes, never prose — plus a dependency graph, an invariant gate run on every loop, and
-grep-enforced anti-goals. Then write CLAUDE.md from `references/claude-md-template.md`: the entry
+grep-enforced anti-goals.
+
+Make the plan **resumable**. `LOOP_GOALS.md` opens with a progress ledger whose markers the build
+ticks in place (`[ ]` `[~]` `[x]` `[!]` `[-]`), and every goal carries a nine-step checklist, so a
+session can end mid-goal and a fresh agent can tell exactly which step it stopped on. Status
+markers are the only thing the build may edit in that file; a build that edits its own acceptance
+criteria has no acceptance criteria. Write the cold-resume sequence into `CLAUDE.md` verbatim —
+an agent that has just lost its context cannot infer the recovery procedure from principles, and
+it must re-run the criteria already marked green before trusting them. Then write CLAUDE.md from `references/claude-md-template.md`: the entry
 point that makes the repo self-bootstrapping (document map with precedence, never-stop protocol
 with blocker routing, cloud-independence rule, multi-agent parallelism, commit/push discipline
 with a living README requirement, prerequisites table, definition of done).
