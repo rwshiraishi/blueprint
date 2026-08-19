@@ -94,7 +94,7 @@ run flagged the same unknown as a verification item.
 
 ## Installation
 
-**Claude (Cowork / claude.ai):** open `dist/app-blueprint.skill` in a conversation and click
+**Claude (Cowork / claude.ai):** open `app-blueprint.skill` in a conversation and click
 **Save skill**, or upload it via Settings → Capabilities → Skills.
 
 **Claude Code:** copy the skill folder into your skills directory:
@@ -127,7 +127,7 @@ it reads `CLAUDE.md` and begins.
 | `references/document-set.md` | The fourteen deliverables, their roles, the precedence chain, numbering conventions |
 | `references/audits.md` | The adversarial audit playbook: DB scale, system scale, user scale, cost verification, security checklist, pre-flight readiness |
 | `references/claude-md-template.md` | Skeleton for the autonomous-build playbook (never-stop protocol, blocker routing, parallelism, commit discipline) |
-| `dist/app-blueprint.skill` | Packaged skill — save-ready for Claude |
+| `app-blueprint.skill` | Packaged skill — save-ready for Claude |
 
 ## License
 
