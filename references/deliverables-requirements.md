@@ -6,6 +6,17 @@ testable as written" and "NFRs with numbers, not adjectives". That is intent. Th
 specification — the field schemas, the numeric axes, and the pass/fail bar an entry must clear
 before `PRD.md` or the audit output is allowed to leave the phase.
 
+**Scale to the tier.** Sketch tier: the FR list, the decisions table, and §1.3's testability bar,
+folded into `BUILD.md` — personas collapse to one sentence, launch metrics to one, and only the
+NFR axes carrying a number that would change the design survive. Standard: everything except the
+Phase-0 defect register when there is no predecessor. Full: all of it, including the parity
+inventory. Four things never drop at any tier, because they are the mechanisms the rest rests on:
+§1.3's testability bar, the mandatory `Fails if:` line on every FR, the open decisions table, and
+the rule that a defect register entry's `Becomes` field cannot be empty. Dropping anything else is
+correct and must be stated in the PRD ("greenfield — no defect register"); dropping it silently is
+how a tier gate turns into an excuse.
+
+
 The reason this file exists: a build agent reading `FR-AUTH-3: users can manage their account` has
 no way to know whether it built the right thing, and no way to know when it is finished. It will
 build *something*, declare done, and the defect surfaces at Phase 8 or later — at which point the
@@ -277,7 +288,7 @@ Generic placeholders throughout. Substitute the product's real operations.
 | NFR-LATENCY-2 | Latency | Record write (create) | p95 ≤ 700 ms | 50 writes/sec | `load/write.js`; alert at p95 | Write queued, user sees "Saving…" then confirmation or explicit failure — never optimistic success |
 | NFR-THROUGHPUT-1 | Throughput | Export job worker | ≥ 5,000 rows/sec sustained, 10 min | 4 workers, 2 KB avg row | `load/export_sustained.js` | Queue depth alert; jobs remain queued, never dropped |
 | NFR-AVAIL-1 | Availability | Public API, 5xx and timeouts count as down | 99.9%/calendar month (43.2 min budget) | External synthetic probe, 60 s interval, 3 regions | Probe dashboard; monthly budget report | Burn-rate alert at 2% budget/hour; feature freeze at 50% burn |
-| NFR-DURABILITY-1 | Durability / RPO / RTO | Primary datastore | RPO ≤ 5 min, RTO ≤ 60 min | Full-region loss | Quarterly restore drill, wall-clock recorded in `AUDIT_LOG.md` | Drill overrun re-opens the design; an untested backup is treated as no backup |
+| NFR-DURABILITY-1 | Durability / RPO / RTO | Primary datastore | RPO ≤ 5 min, RTO ≤ 60 min | Full-region loss | Quarterly restore drill, wall-clock recorded in `docs/AUDIT_LOG.md` | Drill overrun re-opens the design; an untested backup is treated as no backup |
 | NFR-RETENTION-1 | Retention | Application logs | 30 days, then hard delete | — | Query returns 0 rows older than 30 d; deletion job test | Alert on job failure; log growth alert as backstop |
 | NFR-RETENTION-2 | Retention | Deleted user content | Purged within 30 d of deletion request, backups included within 90 d | — | Test asserts purge; backup rotation documented | Manual purge runbook; the gap between 30 d and 90 d is disclosed in the privacy policy |
 | NFR-CONCURRENCY-1 | Concurrency | API layer | 200 concurrent sessions; DB pool 40 connections | — | Saturation test to 400 | Above pool: queue up to 2 s, then 503 with `Retry-After` — never an unbounded wait |
@@ -656,7 +667,7 @@ diverges, and then neither copy can be trusted.
 **Mechanical check.** `scripts/id-sweep.sh docs` verifies ID *resolution* — that every `FR-`,
 `NFR-`, `AD-`, `D<n>`, and `G-` referenced anywhere has a defining entry somewhere. It exits
 nonzero on dangling IDs and warns on weak (table-cell-only) definitions. Run it, append its output
-to `AUDIT_LOG.md`, and do this before every delivery, because successive edit passes drop defining
+to `docs/AUDIT_LOG.md`, and do this before every delivery, because successive edit passes drop defining
 entries while leaving the prose that discusses them — a failure the eye does not catch across
 fourteen documents.
 
@@ -672,6 +683,24 @@ break an ID deliberately and watch it go red. A gate that has never failed is pa
 Each line is mechanically checkable: a grep, a script, a count, or a yes/no with no interpretation.
 Every line is checked before Phase 2 begins. A failing line is a blocker, not a note.
 
+**Forward references are legal at Phase 1 and are closed at Phase 8.** Some lines below cite
+`TESTS_TDD.md` (Phase 6) and screen IDs from `SCREENS.md` (Phase 3), which do not exist yet when
+this checklist first runs. That is not a defect in the checklist and it is not permission to skip
+the line — it is a two-stage gate, and conflating the stages is the "gate required before the goal
+that creates it" protocol killer the pre-flight audit hunts:
+
+- **At Phase 1 close**, the line passes if the FR names a *planned* ID conforming to the grammar
+  (`TS-<GROUP>-<n>`, `SCR-<NAME>`) — a commitment that this FR will be proved by a named suite on
+  a named screen, or the explicit token `n/a` with the reason. Naming nothing is the failure; the
+  FR then has no acceptance path and nobody notices until the build.
+- **At Phase 6 and Phase 8 close**, the same line passes only when every ID *resolves* —
+  `scripts/id-sweep.sh docs` exits 0 and the by-hand check confirms the suite actually exercises
+  the FR.
+
+Run this checklist twice, and say in `docs/AUDIT_LOG.md` which stage each run was. A single run
+that ticks the resolving version at Phase 1 has invented IDs to satisfy a checkbox, and those IDs
+dangle for the rest of the package.
+
 **Phase 0 — source audit (predecessor exists)**
 
 - [ ] Every defect-register row has a `file:line` citation, and each cited file exists at that path.
@@ -679,7 +708,7 @@ Every line is checked before Phase 2 begins. A failing line is a blocker, not a 
 - [ ] Every row has a reproduction trigger a test author could act on without asking a question.
 - [ ] Every row has a severity from the fixed set and a class from the fixed set.
 - [ ] **Every row's `Becomes` field is non-empty** — an FR/NFR ID, a named regression test, or an explicit not-carried-forward reason with a `D<n>`.
-- [ ] Every named regression test appears in `TESTS_TDD.md` and names its `DR-<n>` in its docstring or title.
+- [ ] Every named regression test names its `DR-<n>` in its docstring or title. *Phase 1*: the `TS-` ID is committed to. *Phase 6/8*: it appears in `TESTS_TDD.md`.
 - [ ] Parity inventory entries each carry a citation and an evidence-of-use note; each is carried as an FR or marked dropped with a `D<n>`.
 - [ ] Do-not-port list is non-empty or explicitly states that nothing was excluded, with a reason.
 - [ ] Deployed-vs-source divergence section exists, naming the deployed version/commit checked — or `could not verify` with the reason and the impact.
@@ -706,7 +735,7 @@ Every line is checked before Phase 2 begins. A failing line is a blocker, not a 
 - [ ] No FR statement contains an unquantified adjective (`fast`, `easy`, `intuitive`, `robust`, `seamless`, `secure`, `scalable`) — grep for them.
 - [ ] No FR statement uses a container verb (`manage`, `handle`, `support`, `deal with`) without an enumerated scope, and none has an `Out of scope` field left empty.
 - [ ] Every FR names a screen or explicitly states it has no surface.
-- [ ] Every FR names ≥ 1 test that exists in `TESTS_TDD.md`.
+- [ ] Every FR names ≥ 1 test. *Phase 1*: a planned `TS-<GROUP>-<n>` ID. *Phase 6/8*: that ID resolves in `TESTS_TDD.md`.
 - [ ] Every FR's `Depends on` IDs resolve to defined FRs.
 - [ ] Every FR names its `Source`.
 - [ ] Every NFR axis in §2.1 is either addressed with a number or explicitly marked out of scope with a reason. No axis is silently absent.
@@ -723,5 +752,5 @@ Every line is checked before Phase 2 begins. A failing line is a blocker, not a 
 - [ ] No fetch date is stamped on a figure that was not actually fetched in this run.
 - [ ] `grep -r '{{' docs/` returns only intentional placeholders, and every one is listed in the handoff message.
 - [ ] No invented business specifics: grep the package for candidate email addresses, domains, and entity names, and confirm each was user-supplied or is a placeholder.
-- [ ] `scripts/id-sweep.sh docs` exits 0, with its output appended to `AUDIT_LOG.md`.
+- [ ] `scripts/id-sweep.sh docs` exits 0, with its output appended to `docs/AUDIT_LOG.md`.
 - [ ] The sweep has been shown failing on a deliberately broken ID in this package before its pass was trusted.

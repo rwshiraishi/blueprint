@@ -14,6 +14,15 @@ So: every section below is an acceptance checklist. If a required item is absent
 is not done, and Phase 8's pre-flight audit should catch it. Treat missing items as build
 blockers, not as todos.
 
+**Scale to the tier.** Sketch tier: §0.5's direction paragraph and point of view, a token block,
+and one screen spec — folded into `BUILD.md`, no wireframes, no prototype, no screenshots. A
+weekend tool still gets a direction, because a characterless one-screen tool is still
+characterless and the direction costs a paragraph. Standard: §0.5, tokens, screens, motion, and
+`DESIGN_SYSTEM.md`; wireframes only where a screen implements more than three FRs; prototype
+optional. Full: every section including §12 wireframes and §13 prototype plus screenshots. What
+never drops at any tier: the direction and its derivation table (§0.5), P0's one-message rule, the
+locked semantic tokens with their enforcement, and the accessibility floor.
+
 ## §0 — How this file relates to the other design skills
 
 This file does not teach design. It specifies output. The craft lives in dedicated skills, and
@@ -35,6 +44,57 @@ duplicating them here would guarantee two drifting copies of the same algorithm.
 `design-system` skill" and then check the output against §2 here. When it needs button copy, say
 "draft with `writing-for-interfaces`" and check against §6. If you find yourself writing an
 algorithm in a `docs/` file, you have crossed into another skill's territory — link instead.
+
+## §0.5 — Receive the design direction, or the package produces a characterless product
+
+`elicitation.md` ends by producing a **design direction paragraph**: references, anti-references,
+emotional register, and density derived from the actual usage context. SKILL.md is explicit that a
+package can be technically complete and still produce a characterless product if this is skipped.
+This section is where the direction is received. Without it, §2's token tables are a form to fill
+in, and every form gets filled in the same way.
+
+**Required:** the direction paragraph reproduced **verbatim** at the top of `DESIGN_SYSTEM.md`, in
+a section titled `§0 Direction`, with its references and anti-references intact. Not summarized.
+The anti-references are the load-bearing half — "not Stripe-clean, not enterprise-grey" constrains
+more than any adjective.
+
+**Required:** a **derivation table** immediately below it, tying each global visual choice to the
+sentence of the direction it comes from. Four rows minimum:
+
+| Choice | Value | Derived from |
+|---|---|---|
+| Hue family + why this one | {{e.g. warm neutrals, single cool accent}} | {{the direction sentence, quoted}} |
+| Type ratio + display face posture | {{e.g. 1.25 scale, geometric display, neutral text}} | {{quoted}} |
+| Density default | {{comfortable / compact, and the usage context that decides it}} | {{quoted}} |
+| Radius + elevation posture | {{e.g. sharp, near-flat, borders over shadows}} | {{quoted}} |
+
+A row whose "derived from" cell says "standard practice" or "looks clean" is not a derivation. If
+the direction genuinely does not constrain a choice, write "direction is silent — defaulting to X"
+and add it to the open decisions table, so it is a visible decision rather than an invisible one.
+
+**Required:** a stated **point of view**, one sentence, of the form "this product looks like ___
+and deliberately does not look like ___." It goes in `DESIGN_SYSTEM.md` §0 and it is what a later
+reviewer checks the tokens against.
+
+> **The illustrative values in §2 are Tailwind and Material defaults.** They are there to show the
+> *shape* of a complete token table — the roles, the pairs, the dark-mode column — and they are
+> deliberately boring so the structure is what you read. **Copying them produces exactly the
+> generic interface this section exists to prevent.** Every value in `DESIGN_TOKENS.md` must trace
+> to the derivation table above. A palette that is slate-50 through slate-900 with blue-600 as the
+> accent, and Inter as the face, is the default a model reaches for when it has no direction — its
+> presence is the symptom, not the style.
+
+**Definition of done for §0.5:**
+
+- [ ] `DESIGN_SYSTEM.md` §0 contains the direction paragraph verbatim, references and
+      anti-references included.
+- [ ] The derivation table has all four rows filled, each citing a quoted sentence of the direction
+      or explicitly recording "direction is silent".
+- [ ] The one-sentence point of view is present and names something it deliberately is *not*.
+- [ ] No token value in `DESIGN_TOKENS.md` is an unmodified default-framework step unless the
+      direction says so. Spot-check the greys, the accent, and the type face against Tailwind's
+      and Material's defaults; if three or more match, the direction was not applied.
+- [ ] Every §2 value traces to the derivation table or to a recorded design decision.
 
 ## §1 — Platform matrix (decide this before writing a single token)
 
@@ -1363,6 +1423,11 @@ run, not axe alone.
 
 ## §10 — Phase 3 definition of done
 
+> This section covers `DESIGN_TOKENS.md`, `SCREENS.md`, `MOTION.md`, and the cross-cutting checks.
+> The other three deliverables carry their own definitions of done further down: `DESIGN_SYSTEM.md`
+> in §11, `WIREFRAMES.md` in §12, `PROTOTYPE.html` + `docs/screenshots/` in §13, and the design
+> direction in §0.5. Phase 3 is not done until all five have passed.
+
 Every line mechanically checkable. Run these before declaring Phase 3 complete; Phase 8's pre-flight
 audit re-runs them against the finished package and appends the result to `docs/AUDIT_LOG.md`. Per
 SKILL.md's rule on vacuous gates, show each check **failing** on a deliberately broken input before
@@ -1445,3 +1510,122 @@ trusting a pass.
     both `CLAUDE.md` and `DESIGN_SYSTEM.md` §0.
 37. Wireframe-to-hi-fi deltas are recorded wherever the visual design deliberately diverges.
 38. Every check above has been demonstrated failing on a known-bad input before being trusted.
+
+---
+
+## §11 — `DESIGN_SYSTEM.md` required contents
+
+The semantic authority: it wins on *meaning* where the tokens file wins on *values*. `§10` above
+tests the tokens; this section tests the document that says what they mean.
+
+**Required, in this order:**
+
+1. **§0 Direction** — the direction paragraph verbatim, the derivation table, and the one-sentence
+   point of view (§0.5 above). Also the precedence chain written out verbatim.
+2. **Principles, P0 first.** P0 is always: *every screen leads with one message, and that message
+   wins* — a headline band in the largest type on screen, progressive disclosure for everything
+   else, density opt-in and never default. Then three to six more, each derived from **this
+   product's epistemics** — what it claims to know, how confident it is, and what it must never
+   imply. A principle that would fit any product is not a principle; delete it. Each carries: the
+   rule, why this product needs it, and what violating it looks like on screen.
+3. **Locked semantic tokens.** The subset a tenant or theme may *never* override, each with the
+   safety reason: status colors, confidence encodings, destructive-action treatment, anything
+   where a recolor changes the meaning rather than the look. State the enforcement — a theme
+   validator that rejects overrides of the locked set, not a comment asking nicely.
+4. **Typography semantics** — which role each type step carries (not its px value, which lives in
+   the tokens file), and the rule for what may appear in the headline band.
+5. **Accessibility floor** — the conformance target, the contrast minimums per role pair, focus
+   visibility, and the motion policy pointer. §9 above holds the acceptance criteria; this states
+   the commitment.
+6. **Content rules** — sentence case vs. title case, number and date formatting, how errors are
+   phrased, how empty states are phrased, terminology the product uses and the synonyms it
+   refuses. This is the section most often skipped, and its absence is why an interface reads as
+   written by four people.
+7. **Recorded design decisions** — `D-UI-<n>`, each with alternatives considered and the reason.
+
+**Definition of done:**
+
+- [ ] All seven sections present, in order.
+- [ ] P0 is first and stated as the one-message rule.
+- [ ] Every non-P0 principle names a violation that is visible on screen.
+- [ ] At least one principle would be *wrong* for a different product — grep for the ones that
+      would fit anything and cut them.
+- [ ] The locked-token list names its enforcement mechanism.
+- [ ] Content rules cover: case, numbers, dates, errors, empty states, refused synonyms.
+- [ ] Every `D-UI-<n>` has alternatives and a reason.
+- [ ] The precedence chain matches `document-set.md` word for word.
+
+---
+
+## §12 — `WIREFRAMES.md` required contents (the traceability layer)
+
+Wireframes lose to hi-fi on every visual question. They exist for one job the visual files cannot
+do: proving each screen element implements a requirement. Build them as gray boxes and keep them
+that way — a wireframe that acquires color is competing with `SCREENS.md` and will lose while
+still confusing someone.
+
+**Required per screen:**
+
+- The screen's `SCR-<NAME>` ID, matching `SCREENS.md`.
+- A gray-box layout: structure, hierarchy, and relative size only. No brand color, no final type,
+  no imagery. Grays plus one neutral accent for interactive affordance.
+- **Numbered annotations**, one per meaningful element, each citing the requirement it implements:
+  `(3) Result count — FR-SEARCH-2`. An element with no annotation is either undocumented scope or
+  decoration; both need resolving before Phase 8.
+- The **state policy** for that screen: which of the nine states from §3.1 apply, and what the
+  structure does in each. Loading, empty, error, and partial are the ones that get skipped and
+  then get improvised by the build.
+- A **deltas** block, added once hi-fi exists: every place the visual design deliberately diverges,
+  with the reason. Mark the file `SUPERSEDED VISUALLY — traceability only` at the top.
+
+**Definition of done:**
+
+- [ ] Every screen in `SCREENS.md` has a wireframe, and every wireframe has a screen. No orphans
+      in either direction.
+- [ ] Every annotation cites an ID that `scripts/id-sweep.sh` resolves.
+- [ ] Every FR that the PRD marks as having a UI surface appears in at least one annotation.
+      This is the check that catches a requirement nobody built a place for.
+- [ ] Every screen states its state policy covering at minimum loading, empty, error, partial.
+- [ ] The file carries the superseded marker and a deltas block once hi-fi lands.
+- [ ] No color outside the neutral ramp. Grep the source for hex values that are not grays.
+
+---
+
+## §13 — `PROTOTYPE.html` and `docs/screenshots/` required contents
+
+The measurable reference. Its purpose is to end arguments: when the build and the spec disagree
+about a spacing, someone opens the prototype and measures it.
+
+**Required:**
+
+- **Self-contained.** One HTML file, no network fetches, no CDN links, fonts either embedded or
+  falling back to a declared system stack. It must render correctly with the network off, because
+  it will be opened in five years by someone with no build tooling.
+- **Every screen in `SCREENS.md`**, reachable from an index at the top. Not a representative
+  sample — the states are where the disagreements happen, and a sample always omits them.
+- **The four hard states per screen** at minimum: loading, empty, error, and the densest realistic
+  data. The densest state is the one that breaks layouts, and the one a happy-path prototype
+  always omits.
+- **Tokens as CSS custom properties**, pasted from `DESIGN_TOKENS.md` rather than retyped, so the
+  prototype and the tokens file cannot drift silently.
+- **Both themes**, switchable, if the product ships dark mode.
+- **Real content, never lorem ipsum.** Placeholder text hides every length and wrapping problem
+  the prototype exists to surface. Use plausible content of realistic length, and mark clearly
+  that it is sample content.
+
+**Required in `docs/screenshots/`:** a capture per screen × theme, named `SCR-<NAME>-<theme>.png`,
+at the declared breakpoints from §2.11 — at minimum the narrowest and the widest supported. These
+are the reference images a build agent compares against; a missing capture means that screen has no
+acceptance evidence.
+
+**Definition of done:**
+
+- [ ] Opens and renders with the network disabled.
+- [ ] Index links to every `SCR-` ID in `SCREENS.md`; no screen missing, no extra screen.
+- [ ] Loading, empty, error, and dense states present for every screen.
+- [ ] Token block is byte-identical to `DESIGN_TOKENS.md`'s CSS output. Diff them.
+- [ ] Both themes present if dark mode ships, and every locked semantic token holds its meaning in
+      both.
+- [ ] No lorem ipsum. Grep for it.
+- [ ] `docs/screenshots/` has a capture per screen × theme × breakpoint, named to the `SCR-` ID.
+- [ ] Every check above demonstrated failing on a known-bad input before being trusted.

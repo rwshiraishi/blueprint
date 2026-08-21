@@ -1,10 +1,23 @@
 # Lessons ledger (living document)
 
 Appended after any blueprint package that reached a build — or that stalled
-before one. Statuses: CANDIDATE (one observation, or a transfer from a sibling
-skill not yet confirmed in a blueprint run) → PROMOTED (two confirmations, or
-one airtight causal chain; edit SKILL.md, date-stamp, record `landed-in`) →
-DEMOTED (counter-evidence; revert the edit, never silently delete).
+before one. Statuses:
+
+- **CANDIDATE** — one observation, not yet acted on in SKILL.md.
+- **PROMOTED** — two confirmations, or one airtight causal chain. Edit SKILL.md,
+  date-stamp, record `landed-in`.
+- **PROMOTED (transfer)** — a mechanism confirmed in a *sibling* skill whose
+  failure mode is identical here, promoted on that evidence before this skill has
+  observed it directly. Legitimate, and deliberately distinguished in the label so
+  the difference stays visible: a transfer rests on someone else's run. The first
+  blueprint run that touches a transferred lesson must record whether it held; a
+  transfer that survives one real run drops the parenthetical and becomes plain
+  PROMOTED, and one that fails is DEMOTED like any other.
+- **DEMOTED** — counter-evidence; revert the edit, never silently delete.
+
+Three of the five lessons below are transfers. That is a fact about this ledger's
+age, not a defect: the skill is young and the sibling evidence is real. It stops
+being acceptable the moment a blueprint run could have confirmed one and did not.
 
 Guardrails: never weaken Phase 0 (source audit), Phase 8 (pre-flight), or the
 fresh-agent rule for audits — those are the three mechanisms the whole method
@@ -74,6 +87,13 @@ useful entry in this file, because it names a hole in an earlier gate.
 
 ## Run 1 — 2026-08-19 — building the skill's own reference layer
 - **Tier**: Full, on the skill itself rather than a product.
+- **Tier held**: N/A — not a product run, so the sizing gate was never exercised. This is why
+  U-AB1 is still open after two runs.
+- **Documents**: 0 product documents. 11 reference files produced instead.
+- **Audit findings**: 2 HIGH in `id-sweep.sh`, 1 grammar gap (L-AB4). No package audits ran,
+  because no package existed.
+- **Phase 8 blockers**: N/A — no package to run pre-flight against.
+- **Outcome**: no build. The reference layer shipped; the method itself remains unmeasured.
 - **What the phases caught**: The pre-flight class of defect showed up twice before any package
   existed. (a) Two HIGH bugs in `id-sweep.sh` — definitions written as `- **FR-1**:`, `1. FR-2`,
   or in a table cell were not recognised at all (0 of 3), and a prose sentence beginning with an
@@ -87,3 +107,75 @@ useful entry in this file, because it names a hole in an earlier gate.
   between them will either false-fail constantly or false-pass silently.
 - **Open**: U-AB1 (does the tier gate hold?) is still unanswered — this run picked Full and never
   tested the smaller tiers.
+
+## L-AB5 — a classifier whose buckets overlap silently loses one of them — PROMOTED
+- **Rule**: When a check grades evidence into tiers, prove *each tier fires* on a fixture built
+  for it, not just that the check passes and fails overall. A tier that can never be reached is
+  invisible: the run still prints a verdict, and the missing tier looks like "nothing to report".
+  Add this to L-AB2 — negative-testing a gate means one fixture per branch, not one per outcome.
+- **Evidence**: 2026-08-20 review of `scripts/id-sweep.sh`. Run 1 rebuilt the script to grade
+  definitions STRONG/WEAK/NONE precisely because definition tables and traceability tables are
+  structurally identical. The rebuild then put the table pipe `|` into the STRONG marker class.
+  Every markdown table row starts with one, so:
+  (a) every first-column ID was graded STRONG — a pure traceability table silently "defined"
+      every ID in column 1, and the WEAK bucket the rebuild existed to create never fired once
+      (fixture: a docs/ dir containing only a traceability table reported `Weak-only: 0`);
+  (b) `grep -o` consumed the shared `|` delimiter, so every ID in column 2 and beyond was
+      matched by neither bucket and was reported DANGLING — a false NO-GO on the FR↔test
+      traceability table that `TESTS_TDD.md` is *required* to contain.
+  Both directions were wrong at once, and the script's own header comment described at length a
+  behaviour it did not have.
+- **Which gate should have caught it earlier**: Run 1's negative test. It exercised
+  dangling → exit 1 and resolved → exit 0, which are the two *outcomes*; it never exercised the
+  WEAK *branch*, which is the thing the rebuild added.
+- **Change made**: `|` removed from the marker class; table rows are now split into cells with
+  awk and each cell graded independently. Negative-tested per branch: traceability-only table →
+  4 weak-only warnings, exit 0; prose-only ID → exit 1 naming it; mixed fixture → strong,
+  weak, and dangling all populated in one run.
+- **Landed-in**: `scripts/id-sweep.sh` (MARK class, WEAK block, both with the fixture recorded
+  in-comment).
+
+## Run 2 — 2026-08-20 — external review of the skill as shipped
+- **Tier**: N/A — reviewed the skill, did not run a package through it.
+- **Tier held**: N/A. Two runs in, the sizing gate has still never been exercised on a real
+  product. U-AB1 remains the oldest open question and the one most likely to be wrong.
+- **Documents**: 0 product documents. 3 reference reviewers read 8 files.
+- **Audit findings**: 34 total across three independent reviewers — 6 CRITICAL, 22 MAJOR,
+  6 MINOR after dedup. 4 of 4 spot-checked claims verified true against the filesystem.
+- **Phase 8 blockers**: N/A — no package. But the review found the *class* Phase 8 hunts
+  (dangling references, phantom sections, a definition-of-done line certifying a false claim)
+  present in the skill's own files, which is weak evidence that Phase 8 earns its place.
+- **What the phases caught**: nothing — no phase ran. Every defect below was found by an
+  external reviewer or by executing a script, which is itself the finding: the skill had no
+  self-check that reads its own files.
+- **Outcome**: no build. 3 scripts now ship (was 1); routing fixed; 6 CRITICAL corrected.
+- **What the review caught**: (a) L-AB5 above, the vacuous WEAK bucket plus the false-FAIL on
+  table columns 2+. (b) A wiring defect outside the skill's own files: `app-blueprint` had zero
+  membership in `catalog/subjects.json`, so the routing hook's subject layer could not reach it,
+  and the hardcoded discovery-spine rule for `\bprd\b` routed to `code-to-prd` — the skill this
+  one's own Boundaries section names as its Phase 0 in isolation. Six of the trigger phrases
+  printed in this skill's `description:` frontmatter did not surface it. Measured before the fix:
+  1 of 6 fired.
+- **Which gate should have caught it earlier**: nothing in this skill checks that the triggers it
+  advertises actually route to it. A skill's description is a claim about the harness, and it was
+  never tested against the harness.
+- **Change made**: added to `product-discovery` (member + entry point) and `eng-workflow`
+  (member); added `app-blueprint` to the discovery-spine rule ahead of `code-to-prd` with a
+  reason string that distinguishes them; added a new-build-intent rule. Re-measured: 6 of 6
+  trigger phrases fire, 0 leaks on four unrelated control prompts, `test-routing.sh` 86/86.
+- **Open**: U-AB1, U-AB2, U-AB3 all still unanswered — this run produced no package.
+- **Also caught, in the gates written during this very review** — which is the point of L-AB5 and
+  is recorded here rather than excused: (a) `goal-graph.sh`, newly written, deleted from an awk
+  array while iterating it and reported a cycle in a provably acyclic five-goal graph; (b) the same
+  script read a *wrapped* `Depends on:` continuation line as a second declaration of the goal it
+  named, reporting "6 goals" and a spurious duplicate; (c) an independent reviewer found that
+  `id-sweep.sh`'s new cell-split treated a markdown-escaped `\|` as a column separator, failing one
+  half of the pair as dangling while the other half silently passed. All three were found by
+  running per-branch fixtures, none by reading. Three gate bugs in two scripts in one session, in a
+  skill whose whole thesis is that gates must be negative-tested, is the strongest available
+  evidence for L-AB2 and L-AB5 — and evidence that writing the lesson does not discharge it.
+  Every branch of both scripts now has a fixture, and each fixture was observed red before green.
+- **New**: **U-AB4** — no run has yet confirmed that `foreman` consumes the `CLAUDE.md` and
+  `LOOP_GOALS.md` shapes Phase 7 emits. The handoff is asserted in SKILL.md Phase 9 and has never
+  been executed end to end. Until one package is handed over and starts, treat the handoff as
+  designed-but-unverified.

@@ -51,12 +51,14 @@ roughly a screenful of test names, split it and give the halves new IDs rather t
 ID mean "everything about export" — a suite that means everything cannot be cited to prove
 anything specific.
 
-**Know the tooling limit.** `scripts/id-sweep.sh` checks `FR-`, `NFR-`, `AD-`, `D<n>`, and `G-`
-IDs. It does **not** know the `TS-` grammar, so dangling suite IDs are not caught mechanically
-by that script. Either extend the script's `ID` regex when you adopt `TS-` (one alternation
-added to one line) or make the by-hand traceability check in §2.4 carry that weight and say in
-`TESTS_TDD.md` which you chose. Do not leave it implicit; an unstated gap in a gate is
-indistinguishable from a gate that does not exist.
+**Know the tooling limit.** `scripts/id-sweep.sh` sweeps `TS-` and `EVAL-` along with every other
+family listed in `document-set.md` §Numbering conventions — that section is the single source of
+truth for what the gate covers, and this file deliberately does not restate the list, because a
+second copy is what drifts. What the sweep does *not* do is judge correctness: it proves a `TS-`
+ID resolves to a definition somewhere in the package, not that the suite it names actually
+exercises the FR it claims. That judgment is the by-hand traceability check in §2.4, and it is
+not optional just because the mechanical pass is green. Say in `TESTS_TDD.md` that both ran. An
+unstated gap in a gate is indistinguishable from a gate that does not exist.
 
 ### 1.2 Required fields
 
@@ -258,9 +260,9 @@ Two more mappings, same rules, kept in the same section:
 
 ### 2.4 The mechanical check, and what it cannot do
 
-`scripts/id-sweep.sh docs` verifies **ID resolution**: every `FR-`, `NFR-`, `AD-`, `D<n>`, and
-`G-` referenced anywhere in the package has a defining entry somewhere. Run it, append its
-output to `AUDIT_LOG.md`, and do it before every delivery — successive edit passes drop defining
+`scripts/id-sweep.sh docs` verifies **ID resolution**: every ID family listed in `document-set.md` §Numbering conventions that is
+referenced anywhere in the package resolves to a definition. Run it, append its
+output to `docs/AUDIT_LOG.md`, and do it before every delivery — successive edit passes drop defining
 entries while leaving the prose that discusses them, and the eye does not catch that across
 fourteen documents.
 
@@ -376,7 +378,7 @@ UNTESTABLE-1  Biometric unlock on cold launch  (FR-AUTH-6, P0)
              biometry-changed invalidation).
   Substitute: Unit tests over the auth state machine with the platform call
              injected (TS-AUTH-5) + a manual device checklist run each release,
-             recorded with device model and OS version in AUDIT_LOG.md.
+             recorded with device model and OS version in docs/AUDIT_LOG.md.
   Residual risk: The real prompt's cancel/fallback path is verified by a human,
              not by CI. A regression there ships if the manual pass is skipped.
   Owner:     {{RELEASE_OWNER}}
@@ -441,7 +443,7 @@ makes the sequence auditable after the fact by anyone, including a reviewer who 
 which is the normal case for an autonomous build.
 
 Where this record lives: a short table in `TESTS_TDD.md` for the P0 and regression set, or
-`AUDIT_LOG.md` appended as the build proceeds. Either is fine; **no** location is not, because
+`docs/AUDIT_LOG.md` appended as the build proceeds. Either is fine; **no** location is not, because
 "we did TDD" is unfalsifiable and therefore worth nothing as a claim.
 
 ### 4.3 The three exemptions, stated so they are not invented
@@ -831,7 +833,7 @@ implied:
 - A screen-reader pass on each P0 flow, naming the reader and version.
 - Zoom/reflow at 200% and at the minimum viewport from the browser NFR.
 
-The manual results are recorded in `AUDIT_LOG.md` with a date, because "we do a manual pass" is
+The manual results are recorded in `docs/AUDIT_LOG.md` with a date, because "we do a manual pass" is
 unfalsifiable and stops happening the first busy release. On mobile, the equivalents are the
 platform accessibility inspector plus a VoiceOver/TalkBack pass; the same recording rule
 applies.
@@ -1064,9 +1066,9 @@ note.
 - [ ] No suite has an empty `Covers` field.
 - [ ] Every NFR maps to a named verification mechanism (suite, load script, dashboard panel, or scheduled drill) with an owner.
 - [ ] Every `DR-<n>` from Phase 0 maps to a named regression test or an explicit not-carried-forward reason with a `D<n>`.
-- [ ] `scripts/id-sweep.sh docs` exits 0, and its output is appended to `AUDIT_LOG.md`.
+- [ ] `scripts/id-sweep.sh docs` exits 0, and its output is appended to `docs/AUDIT_LOG.md`.
 - [ ] Every weak-only ID in the sweep output has been checked by hand against a real defining entry in the owning document.
-- [ ] The `TS-` ID-checking decision is stated: either the sweep's regex was extended, or the by-hand check carries it.
+- [ ] Both traceability passes are recorded: the `id-sweep.sh` result (IDs resolve) and the §2.4 by-hand check (each suite actually exercises its FR)
 - [ ] The sweep has been observed FAILING on a deliberately broken ID in this package.
 
 **Substrate**

@@ -55,9 +55,28 @@ documents without a declared winner rot into contradictions within three edit pa
 - Goals: `G-<phase>.<n>`, matching the build plan's deliverable numbering.
 - Test suites: `TS-<GROUP>-<n>` — the group matches the FR group it proves wherever one exists.
 - Phase-0 defects: `DR-<n>` (defect register), cited by the regression test named for it.
+- Parity inventory: `PI-<n>` — what the predecessor got right; each is carried as an FR or
+  explicitly marked dropped.
+- Screens: `SCR-<NAME>` or `SCR-<NAME>-<n>` — stable per screen, cited by FRs and wireframe
+  annotations.
+- Exit criteria: `EC-<n>`, scoped to their goal and written `G-3.2/EC-1` when cited from outside it.
+- Anti-goals: `AG-<n>`. Eval gates: `EVAL-<NAME>-<n>`. Untestable claims: `UNTESTABLE-<n>`.
+  Test-weakening records: `ADR-<n>`.
+- Sub-goals from a decomposition take a trailing letter: `G-3.2a`, `G-3.2b`.
 
-Every ID family in this list is recognised by `scripts/id-sweep.sh`. Adding a family here without
-adding it to that script's grammar makes the new IDs invisible to the pre-flight gate — which is
-exactly how a cross-reference check passes while references dangle.
+**Swept vs. hand-checked.** Every family above is in `scripts/id-sweep.sh`'s grammar and is
+checked mechanically. Four families are deliberately **excluded** because their prefixes collide
+with ordinary prose and sweeping them would bury real findings in noise: launch metrics `M<n>`,
+build phases `B<n>`, security rules `S<n>`, and query IDs `Q<n>`. Those are checked by hand in the
+Phase 8 pre-flight pass, and the pass must say so explicitly rather than reporting a clean sweep
+over them.
+
+Adding a family here without adding it to that script's grammar in the same change makes the new
+IDs invisible to the pre-flight gate — which is exactly how a cross-reference check passes while
+references dangle (lesson L-AB4). The reverse is equally bad: extending the grammar without
+updating this section leaves prose that misstates what the gate covers, which is how
+`deliverables-testing.md` came to instruct readers to hand-check `TS-` IDs the sweep already knew
+(lesson L-AB4, second direction). This section is the single source of truth for sweep coverage;
+prose elsewhere points here rather than restating the list.
 - Every threshold/constant in the spec is tenant/user configuration with a recorded default —
   hardcoded values are a named anti-pattern.

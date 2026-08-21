@@ -55,6 +55,7 @@ intent is what produces a plausible, thin document.
 | 4 Security | `references/deliverables-security.md` |
 | 6 Testing | `references/deliverables-testing.md` |
 | 7 Build goals | `references/deliverables-build-goals.md` |
+| 7 CLAUDE.md | `references/claude-md-template.md` |
 | 2, 8 Audits | `references/audits.md` |
 
 ### Intake — establish what the user actually has
@@ -175,12 +176,13 @@ with a living README requirement, prerequisites table, definition of done).
 
 Before declaring done, run the readiness audit from `references/audits.md` §Pre-flight against
 your own package. Start with the **mechanical cross-reference sweep**: run `scripts/id-sweep.sh
-docs`, which exits nonzero on any FR/NFR/AD/D/G ID referenced but never defined, and append its
-output to `AUDIT_LOG.md`. Then check by hand: broken references, the first-hour trap,
+docs`, which exits nonzero on any ID referenced but never defined — across every ID family listed in `document-set.md` §Numbering conventions — and append its
+output to `docs/AUDIT_LOG.md`. Then check by hand: broken references, the first-hour trap,
 contradictions introduced by successive edits, and world-class blind spots (i18n, billing, email
-deliverability, error tracking, status page, legal artifacts, demo data, SLAs). Fix to GO. This
-audit routinely finds blockers in even excellent packages — successive edit passes break
-cross-references invisibly.
+deliverability, error tracking, status page, legal artifacts, demo data, SLAs). Fix to GO. This audit has found blockers in every package it has been run on so far, though the sample is
+small enough that `references/lessons.md` U-AB2 still records the rate as unmeasured — record your
+finding count so it stops being an assertion. The mechanism is not in doubt: successive edit passes
+break cross-references invisibly.
 
 Before you trust any gate you wrote for this package — the sweep, the invariant gate, a goal's
 exit command — show it FAILING on a known-bad input first. A check that has never gone red is
@@ -194,9 +196,40 @@ Final structure: `CLAUDE.md` at repo root (auto-read by Claude Code), everything
 first-class docs and delete their packaging). Deliver files as they're produced, not batched.
 
 Then hand off. This skill stops at a repo an agent can be told to build; it does not build it.
-The executor is the `foreman` skill — its boss/worker/checker loop reads `CLAUDE.md` and
-`LOOP_GOALS.md` as its constitution and goal list, which is exactly what Phase 7 produced. Say so
-explicitly in your final message rather than leaving the user to guess what "begin" means.
+
+**The handoff to `foreman`, stated accurately.** Foreman's boss does not read `LOOP_GOALS.md` on
+its own — its pre-run read list is fixed and names only its own references plus a repo-local
+`foreman-notes.md`. It *derives* its constitution from `CLAUDE.md`, and it *writes* its own spec
+and task decomposition. So the package is an input its boss must be pointed at, not a format it
+ingests. Four things make that pointing work; do them in Phase 9 rather than leaving the user to
+discover the mismatch:
+
+1. **Give the constitution a liftable core.** Foreman embeds its constitution verbatim in every
+   spawn and caps it near one page for that reason; a full `CLAUDE.md` is many times that. Mark a
+   contiguous `## Constitution core` section inside `CLAUDE.md` — stack conventions, quality
+   floor, forbidden shortcuts, the verification command per task type — that the boss can lift
+   whole. Everything else in `CLAUDE.md` stays, and stays boss-only reading.
+2. **Give every goal a worker-sized extract.** A goal's reading map may cite eight sections across
+   seven documents; a foreman worker card is capped near two files and short extracts. Each goal
+   therefore carries, beside its full reading map, a `worker-extract:` naming the one or two files
+   and the line ranges a worker actually needs. The full map is for the boss.
+3. **Mark which exit criteria are boss-only.** The invariant gate runs a full build. Foreman runs
+   the full build once, boss-side, after all workers finish, because two concurrent builds against
+   one working tree corrupt artifacts and produce false failures. Tag those criteria `scope: boss`
+   so a per-task checker does not re-run them; everything else stays `scope: task`.
+4. **Write `foreman-notes.md` at the repo root**, alongside `CLAUDE.md`. It is the one file exempt
+   from the flat-`docs/` rule below, because foreman looks for it at the root. Seed it with the
+   build commands, the shared-tree hazards, and which goals are safe to run in parallel.
+
+Status vocabulary does not map by itself either: this package's ledger markers
+(`[ ]` `[~]` `[x]` `[!]` `[-]`) and foreman's `{verdict, evidence, repro_command}` are different
+alphabets. State the mapping in `CLAUDE.md` — a checker PASS ticks the step, a FAIL sets `[!]` and
+files the evidence — or the ledger silently stops reflecting the build.
+
+Say all of this explicitly in your final message rather than leaving the user to guess what
+"begin" means. **This handoff is designed but not yet executed end to end** (`references/lessons.md`
+U-AB4): no run has confirmed a foreman boss starting cleanly from a package this skill produced.
+Treat the first handoff as an experiment, and record what broke.
 
 ## Operating principles (apply throughout)
 
@@ -243,23 +276,60 @@ that someone else (agent or human) can execute without you in the room.
 
 ## Self-Improvement Loop
 
-After any package that reached a build — or that stalled before one — append a
-run section to `references/lessons.md`. Record, at minimum: the tier you picked
-and whether it held; how many findings each audit produced; **which phase caught
-each defect and which earlier phase should have**; whether Phase 8 found
-blockers; and, if the build stalled, the document that was missing or wrong.
+This skill measures itself, and the measurement is gated rather than requested —
+a rule with no machine behind it is a wish, and that applies to this section as
+much as to anything it tells you to write.
 
-The promotion rules live at the top of that file: CANDIDATE on one observation;
-PROMOTED into SKILL.md on two confirmations or one airtight causal chain, date
-stamped with `landed-in` recorded; DEMOTED with counter-evidence by reverting
-the edit, never by silent deletion.
+**After every package** — one that reached a build, and especially one that
+stalled before one — append a run record to `references/lessons.md`, then run:
 
-Guardrails on what may never be weakened by a lesson: Phase 0's line-verified
-source audit, Phase 8's pre-flight gate, the fresh-agent rule for every audit,
-and the requirement that every audit leave an `AUDIT_LOG.md` artifact. Those
-four are the mechanisms the method rests on; a lesson that trims them is
-measuring its own convenience, not the method's performance.
+```
+scripts/lessons-check.sh references/lessons.md    # exit 0 required
+```
+
+It fails on a lesson promoted with no `Landed-in` (the ledger claiming an edit
+the skill does not have), a lesson missing its Rule or Evidence, a run record
+missing any required field, an undated run, and a ledger with no UNANSWERED
+section. It warns when transfers are still unconfirmed after three real runs.
+Run it as the last step of Phase 9, before the handoff message.
+
+**Run record — every field is required, because these are the fields that answer
+the open questions:**
+
+```markdown
+## Run <n> — <YYYY-MM-DD> — <one line: what was built>
+- **Tier**: Sketch | Standard | Full, and why that one
+- **Tier held**: yes, or the finding that forced an escalation
+- **Documents**: how many were actually produced
+- **Audit findings**: count per audit, by severity
+- **Phase 8 blockers**: how many the pre-flight gate caught
+- **What the phases caught**: each defect, and which phase found it
+- **Which gate should have caught it earlier**: the hole in the earlier phase
+- **Change made**: what was edited in this skill as a result
+- **Outcome**: reached build | stalled — and if stalled, the document that was
+  missing or wrong
+```
+
+The signal worth more than all the others: **which phase caught each defect and
+which earlier phase should have.** A defect caught at pre-flight that Phase 0
+should have caught names a hole in an earlier gate, and that is the only kind of
+entry that improves the method rather than describing it.
+
+**Promotion**: CANDIDATE on one observation; PROMOTED on two confirmations or one
+airtight causal chain, date-stamped with `Landed-in` recorded; DEMOTED with
+counter-evidence by reverting the edit, never by silent deletion. A lesson
+promoted on a *sibling* skill's evidence keeps its qualifier — `PROMOTED
+(transfer)` — until a real blueprint run confirms it. Borrowed evidence that
+never gets tested hardens into fact, which is why the checker counts them.
+
+**Guardrails a lesson may never weaken**: Phase 0's line-verified source audit,
+Phase 8's pre-flight gate, the fresh-agent rule for every audit, and the
+requirement that every audit leave a `docs/AUDIT_LOG.md` artifact. Those four are
+the mechanisms the method rests on; a lesson that trims them is measuring its own
+convenience, not the method's performance.
 
 A phase that has never once produced a finding is not evidence the phase is
 unnecessary — it is evidence the phase is being run vacuously. Record it as an
-UNANSWERED and investigate before deleting anything.
+UNANSWERED and investigate before deleting anything. Likewise a `lessons.md` with
+no UNANSWERED section is claiming the method is fully understood, which is why
+the checker treats that as a failure rather than a clean bill of health.

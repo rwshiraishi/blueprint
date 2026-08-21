@@ -42,12 +42,27 @@ FILES=$(printf '%s\n' "$FILES" | grep -c . >/dev/null && printf '%s\n' "$FILES" 
 NFILES=$(printf '%s\n' "$FILES" | grep -c .)
 
 # ID grammar per references/document-set.md §Numbering conventions.
-ID='(FR-[A-Z0-9]+-[0-9]+|NFR-[A-Z0-9]+-[0-9]+|TS-[A-Z0-9]+-[0-9]+|AD-[0-9]+|DR-[0-9]+|D-[A-Z]+-[0-9]+|D[0-9]+|G-[0-9]+\.[0-9]+)'
+#
+# Keep this in lockstep with that section. A family listed there but missing here is
+# invisible to the gate, which is how a cross-reference check passes while references
+# dangle (lesson L-AB4). Families whose prefix is ambiguous with ordinary prose —
+# M<n> launch metrics, B<n>, S<n>, Q<n> — are deliberately NOT swept and are listed as
+# hand-checked in document-set.md; adding them here would bury real findings in noise.
+#
+# G- accepts an optional trailing letter: a decomposed sub-goal is G-3.2a, and without
+# the [a-z]? every sub-goal produced by an L-decomposition matched nothing at all.
+ID='(FR-[A-Z0-9]+-[0-9]+|NFR-[A-Z0-9]+-[0-9]+|TS-[A-Z0-9]+-[0-9]+|EVAL-[A-Z0-9]+-[0-9]+|SCR-[A-Z0-9]+(-[0-9]+)?|UNTESTABLE-[0-9]+|ADR-[0-9]+|AD-[0-9]+|AG-[0-9]+|DR-[0-9]+|PI-[0-9]+|EC-[0-9]+|D-[A-Z]+-[0-9]+|D[0-9]+|G-[0-9]+\.[0-9]+[a-z]?)'
 # One or more stacked markdown markers: heading, ordered/unordered bullet, checkbox,
-# blockquote, table pipe, bold/underline. Stacking matters — "- **FR-AUTH-1**:" is
-# the single most common way people actually write these, and a single-marker regex
-# misses it entirely.
-MARK='(#{1,6}|[0-9]+\.|[-*+]|\[[ xX]\]|>|\||\*\*|__)'
+# blockquote, bold/underline. Stacking matters — "- **FR-AUTH-1**:" is the single
+# most common way people actually write these, and a single-marker regex misses it
+# entirely.
+#
+# The table pipe is deliberately NOT a marker. Every markdown table row begins with
+# one, so including it graded every first-column ID as STRONG — which made the entire
+# WEAK bucket below unreachable and let a pure traceability table silently satisfy
+# the gate for every ID in column 1. Negative-tested 2026-08-20: with the pipe in
+# MARK, a docs/ dir containing only a traceability table reported "Weak-only: 0".
+MARK='(#{1,6}|[0-9]+\.|[-*+]|\[[ xX]\]|>|\*\*|__)'
 
 tmp=$(mktemp -d) || exit 2; trap 'rm -rf "$tmp"' EXIT
 : > "$tmp/all"; : > "$tmp/strong"; : > "$tmp/weak"
@@ -63,8 +78,21 @@ while IFS= read -r f; do
     grep -ohE "^[[:space:]]*$ID[[:space:]]*(:|—)" "$f" 2>/dev/null
   } | grep -ohE "\b$ID\b" 2>/dev/null >> "$tmp/strong"
   # WEAK: the ID alone in a table cell, any column.
-  grep -ohE "\|[[:space:]]*(\*\*)?$ID(\*\*)?[[:space:]]*(\||$)" "$f" 2>/dev/null \
-    | grep -ohE "\b$ID\b" 2>/dev/null >> "$tmp/weak"
+  #
+  # This splits rows into cells rather than pattern-matching the row, because grep -o
+  # consumes the shared "|" delimiter: in "| FR-A-1 | TS-A-1 |" the first match ate
+  # the pipe that column 2 needed, so every ID past the first column was invisible to
+  # both buckets and got reported as DANGLING. Negative-tested 2026-08-20: the old
+  # pattern failed a two-column traceability table on its own second column.
+  awk '/^[[:space:]]*\|/ {
+         line = $0
+         gsub(/\\\|/, "\001", line)      # an escaped \| is cell CONTENT, not a separator
+         n = split(line, cell, "|")
+         for (i = 1; i <= n; i++) { gsub(/\001/, "|", cell[i]); print cell[i] }
+       }' \
+      "$f" 2>/dev/null \
+    | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//; s/^(\*\*|__|`)+//; s/(\*\*|__|`)+$//; s/^[[:space:]]+//; s/[[:space:]]+$//' \
+    | grep -xE "$ID" 2>/dev/null >> "$tmp/weak"
 done <<< "$FILES"
 
 sort -u "$tmp/all"    > "$tmp/all.u"

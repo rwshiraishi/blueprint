@@ -18,12 +18,55 @@ exit code and a defined expected output.** If a human has to read the output and
 an exit criterion; it is a review step, and review steps belong in BLOCKERS.md as human-gated
 items, not in the autonomous loop.
 
-`LOOP_GOALS.md` is consumed by the `foreman` skill — its boss/worker/checker loop reads
-`CLAUDE.md` as the constitution and this file as the goal list, and its independent checkers
-re-execute the exit criteria rather than trusting a worker's self-report. Write for that reader.
-Anything a checker cannot re-execute mechanically is invisible to the mechanism that catches lying
-workers. This file does not restate foreman's orchestration; it specifies the artifact foreman
-consumes.
+**Which scripts ship, and who owns the rest.** This skill ships exactly two, and they are
+package-generic: `scripts/id-sweep.sh` (cross-reference resolution) and `scripts/goal-graph.sh`
+(dependency-graph soundness). Run both from the skill directory against your `docs/`.
+
+Every other script this file requires — `invariant-gate.sh`, `check-anti-goals.sh`,
+`check-protocol-killers.sh`, `check-test-weakening.sh`, `check-placeholder-data.sh`,
+`check-hardcoded.sh`, `check-silent-failure.sh`, `check-env-completeness.sh`,
+`check-doc-drift.sh`, `scan-secrets.sh`, `clean.sh` — is **product-specific and is a deliverable of
+the build**, because each one runs that product's toolchain. Do not leave them implicit: make them
+the deliverable of a named root goal (conventionally `G-1.2 Verification harness`), with the same
+exit criteria as any other goal, including the negative test. A dozen gates nobody was assigned to
+write become a dozen one-line stubs that all `exit 0`, and §3.5 is explicit that a gate which
+cannot go red is strictly worse than no gate — it converts an unexamined build into a confident
+green.
+
+**Scale to the tier.** Sketch tier: a goal list with exit commands and the invariant gate, folded
+into `BUILD.md` — no dependency graph script, no anti-goal script suite, no seed profiles, no
+per-vendor spend caps, no separate `STATE_AND_DATA.md`. Standard: goals, dependency graph, the
+gate, anti-goals as greps rather than scripts, one seed profile. Full: every section, every script
+negative-tested, digest-pinned images, three seed profiles. The definition of done at the end of
+this file is written for Full; a Sketch-tier run that ticks all of it has spent a week on a
+weekend tool, which SKILL.md names as the most common way this method wastes time. What never
+drops at any tier: exit criteria are literal commands with expected exit codes, the progress
+ledger with its status markers, and the rule that the build edits status markers and nothing else.
+
+`LOOP_GOALS.md` is written for the `foreman` skill's **boss**, which is a reader, not a parser.
+Be precise about this, because the difference changes what you write: foreman's boss derives its
+constitution from `CLAUDE.md` and then writes its own spec and task decomposition. It does not
+ingest this file automatically — its pre-run read list is fixed and does not name it. Someone
+points the boss here, and the boss decomposes what it finds into task cards. What this file must
+do, therefore, is survive that translation: each goal must be liftable into a task card by a
+reader who will keep the exit criteria and discard the prose.
+
+Three consequences, each with a field that carries it (see SKILL.md Phase 9 for the full handoff
+contract):
+- Foreman's independent checkers **re-execute** exit criteria rather than trusting a worker's
+  self-report, so anything a checker cannot re-execute mechanically is invisible to the mechanism
+  that catches lying workers.
+- Foreman runs the **full build once, boss-side, after all workers finish** — two concurrent
+  builds against one working tree corrupt artifacts and produce false failures. Any criterion that
+  triggers a full build (the invariant gate above all) carries `scope: boss`; the rest carry
+  `scope: task`. A gate tagged `task` that rebuilds the world is a documented way to make a green
+  build report red.
+- A worker card is capped near two files and short extracts, while a goal's reading map routinely
+  names eight sections across seven documents. Each goal therefore carries `worker-extract:` — the
+  one or two files and line ranges a worker needs — beside the full map, which is for the boss.
+
+This file does not restate foreman's orchestration; it specifies an artifact foreman's boss can
+decompose without inventing the parts you left out.
 
 **Notation used throughout.** Goal IDs are `G-<phase>.<n>` per `document-set.md` §Numbering,
 matching the build plan's deliverable numbering in `DESIGN_SPEC.md`. FR/NFR/AD/D IDs are as
@@ -552,7 +595,8 @@ STATUS.md so the human reading it sees `G-3.2 blocked (transitively, via G-2.6)`
 mystery.
 
 ```
-scripts/goal-graph.sh --unblocked   # reads STATUS.md for status, prints the ready set
+scripts/goal-graph.sh --unblocked   # BUILD-OWNED EXTENSION: the shipped script does --check only;
+                                    # --unblocked reads this product's STATUS.md, so goal G-1.2 adds it
 ```
 
 The stop condition follows directly: **the build stops only when the unblocked set is empty.** Not
@@ -1169,7 +1213,7 @@ Blocked
   B-5  G-7.1  App Store Connect key — needs an ASC API key with App Manager role
        (transitively blocks G-7.2, G-7.3)
 
-Unblocked and ready (from scripts/goal-graph.sh --unblocked)
+Unblocked and ready (from scripts/goal-graph.sh --unblocked, the build-owned extension)
   G-4.3, G-5.1, G-5.2, G-5.4, G-6.2, G-8.1
 
 Next action if unattended
@@ -1310,7 +1354,7 @@ Every line is checked before Phase 8 begins. A failing line is a blocker, not a 
 - [ ] Its measured runtime is recorded and is under the stated ceiling.
 - [ ] The gate/phase-gate/release-gate tiering is stated, and every check is assigned to exactly one tier.
 - [ ] The gate-blocks-the-commit rule appears verbatim in `LOOP_GOALS.md` and `CLAUDE.md`.
-- [ ] **Each gate check has been observed failing** on a deliberately broken input, and the check that caught it was named. Recorded in `AUDIT_LOG.md`.
+- [ ] **Each gate check has been observed failing** on a deliberately broken input, and the check that caught it was named. Recorded in `docs/AUDIT_LOG.md`.
 
 **Dependency graph**
 
@@ -1336,7 +1380,7 @@ Every line is checked before Phase 8 begins. A failing line is a blocker, not a 
 - [ ] All twelve global anti-goals from §6.1 appear in `LOOP_GOALS.md` with stable `AG-<n>` IDs.
 - [ ] Every anti-goal names a literal grep, script, or `git diff` check — none is stated as intent only.
 - [ ] `scripts/check-anti-goals.sh` runs all of them and is wired into the invariant gate.
-- [ ] **Every anti-goal check has been observed failing** on a deliberately introduced violation. Recorded in `AUDIT_LOG.md`.
+- [ ] **Every anti-goal check has been observed failing** on a deliberately introduced violation. Recorded in `docs/AUDIT_LOG.md`.
 - [ ] AG-6's check includes the empty-state assertion, so removing a placeholder cannot be satisfied by rendering nothing.
 - [ ] AG-6's legitimate-placeholder exclusions are by path, not by an in-code comment the agent can add.
 
@@ -1370,8 +1414,11 @@ Every line is checked before Phase 8 begins. A failing line is a blocker, not a 
 
 **Package coherence**
 
-- [ ] `scripts/id-sweep.sh docs` exits 0 with output appended to `AUDIT_LOG.md`, and has been shown failing on a deliberately broken ID.
+- [ ] `scripts/id-sweep.sh docs` exits 0 with output appended to `docs/AUDIT_LOG.md`, and has been shown failing on a deliberately broken ID.
 - [ ] Every FR↔goal edge resolves in both directions (`deliverables-requirements.md` §8).
 - [ ] `grep -rn '{{' docs/` returns only intentional placeholders, every one listed in the handoff message.
 - [ ] No invented business specifics anywhere in `LOOP_GOALS.md` or `STATE_AND_DATA.md`.
-- [ ] The handoff message names `foreman` as the executor and states that `CLAUDE.md` + `LOOP_GOALS.md` are its constitution and goal list.
+- [ ] The handoff message names `foreman` as the executor, and states accurately that its boss must be *pointed at* `LOOP_GOALS.md` (foreman does not read it on its own), that the constitution is lifted from `CLAUDE.md` §Constitution core, and that the first handoff is unverified (lessons U-AB4).
+- [ ] Every exit criterion carries `scope: boss` or `scope: task`, and every criterion that triggers a full build is `boss`.
+- [ ] Every goal carries a `worker-extract:` naming ≤2 files with line ranges.
+- [ ] `foreman-notes.md` exists at the repo root with build commands, shared-tree hazards, and which goals are parallel-safe.

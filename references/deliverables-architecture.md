@@ -727,6 +727,76 @@ render crashes, offline queue corruption, and every native crash. Required:
 
 ---
 
+## 7.5 Integrations
+
+`document-set.md` requires DESIGN_SPEC to carry integrations, and they are the most common source
+of a build stalling on something nobody wrote down. One entry per external service the product
+depends on — payment, auth provider, email, storage, model provider, analytics, anything with an
+API key.
+
+**Required per integration:** the vendor and the specific product tier; the auth mode (API key,
+OAuth, service account) and where the credential lives per `SECURITY.md` §3.10; whether a sandbox
+or test mode exists and how a local build reaches it; the rate limit and quota **as fetched
+numbers with their source URL and fetch date**, per §5's price rule — a rate limit from memory is
+the same defect as a price from memory; the failure semantics (what the product does when this
+service is down, slow, or returns an error — degrade, queue, or fail the request, stated); and
+**what breaks if this vendor disappears**, with the migration cost in one sentence.
+
+**Required once:** the integration that is hardest to replace, named. Every product has one, and
+knowing which it is before the build is the difference between a considered dependency and an
+accident.
+
+**Definition of done:** every integration has all six fields; every rate limit carries a source URL
+and fetch date or is marked "could not verify"; every integration names a sandbox path or states
+explicitly that local development cannot reach it, which is a `BLOCKERS.md` entry waiting to
+happen and should be written now.
+
+## 7.6 Verification backlog — the ⚠ list
+
+Every claim the spec rests on that could not be verified against a primary source today. This is
+the honest counterpart to the verify-never-assume rule: the rule cannot mean "delete anything
+unverifiable", so it means "list it, mark it, and give it a fallback."
+
+| ⚠ | Claim | Why unverified | Fallback in force | Re-check trigger |
+|---|---|---|---|---|
+| ⚠1 | {{"provider X supports Y"}} | {{docs ambiguous / needs an account}} | {{the design that works either way}} | {{before goal G-x.y}} |
+
+**Required:** every ⚠ has a fallback that is *actually designed*, not "we'll figure it out" — the
+architecture must work if the claim turns out false, or the claim is a blocker rather than a ⚠.
+And every ⚠ has a re-check trigger naming a goal, so it is re-verified at the moment it starts to
+matter rather than at the moment it breaks.
+
+**Definition of done:** no ⚠ without a fallback; no ⚠ without a trigger; every ⚠ referenced from
+the goal its trigger names, so a build agent reaching that goal sees it.
+
+## 7.7 Build plan — the numbering `LOOP_GOALS.md` mirrors
+
+The section Phase 7 converts into goals. `document-set.md` §Numbering states that goals are
+`G-<phase>.<n>` **matching the build plan's deliverable numbering**, which means this section
+defines that numbering. Get it wrong and every goal ID in the package is arbitrary.
+
+**Required:** phases numbered `1..n`, each with deliverables numbered `<phase>.<n>`. Per
+deliverable:
+
+- **Scope** — one sentence: what exists when this is done that did not before.
+- **Depends on** — other deliverable numbers only. This is the source of the dependency graph; a
+  cycle here becomes a cycle in the goals and is caught by the pre-flight audit far too late.
+- **Lands** — the `FR-`/`NFR-` IDs this deliverable satisfies. Every P0 FR appears in exactly one
+  deliverable's Lands list. An FR in none is unbuilt; an FR in two is a scope collision.
+- **Demo** — the thing you can show a human when it is done. Not a test result: a behavior. This
+  is what stops a phase from being "the plumbing works" three times in a row.
+
+**Ordering rules.** The kernel goes first — the tenant-context wrapper, the auth boundary, the
+money path — because everything depends on it and retrofitting it touches every file. Anything
+needing a human-provided prerequisite (`CLAUDE.md` §5) goes as late as its dependencies allow. Any
+deliverable carrying a ⚠ from §7.6 is scheduled after the re-check that clears it, or carries its
+fallback design explicitly.
+
+**Definition of done:** every P0 FR appears in exactly one Lands list; every Depends-on resolves to
+a deliverable that exists; the graph is acyclic (`scripts/goal-graph.sh --check`, which ships with this skill);
+every deliverable has a Demo that is a behavior, not a passing test; the kernel is deliverable 1.x;
+no phase-1 deliverable depends on a human prerequisite.
+
 ## 8. EXTENSIBILITY.md (Phase 5)
 
 Short document, high leverage. It exists to answer one question before it is asked under deadline
@@ -921,3 +991,7 @@ Each line is mechanically checkable. Do not mark the phase complete on impressio
       as fresh agents and written findings, fixes, deliberate non-fixes, the "gets right" list, and
       a verification-pass verdict to `docs/AUDIT_LOG.md`.
 - [ ] The verification pass ran on the *fixed* document, not the original.
+- [ ] §7.5 Integrations: every entry has all six fields; every rate limit carries a source URL and fetch date or is marked "could not verify".
+- [ ] §7.6 Verification backlog: every ⚠ has a designed fallback and a re-check trigger naming a goal.
+- [ ] §7.7 Build plan: every P0 FR appears in exactly one Lands list; the dependency graph is acyclic; the kernel is deliverable 1.x; every deliverable has a behavioral Demo.
+- [ ] DESIGN_SPEC.md uses these section numbers verbatim (§1 Architecture decisions … §8 Extensibility), and every `§n` cross-reference in the package resolves to a section that exists.
